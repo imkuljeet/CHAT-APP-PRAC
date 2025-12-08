@@ -16,7 +16,7 @@ function signup(event) {
     };
   
     // Axios POST request
-    axios.post("http://localhost:5000/user/signup", userData)
+    axios.post("http://localhost:3000/user/signup", userData)
       .then(response => {
         alert("Signup successful!");
         console.log(response.data);
