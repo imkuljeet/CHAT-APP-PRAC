@@ -1,5 +1,6 @@
 const User = require("../models/users");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 // ✅ Signup controller (already done)
 const signup = async (req, res) => {
@@ -51,10 +52,18 @@ const login = async (req, res) => {
       return res.status(401).json({ message: "Invalid email or password" });
     }
 
-    // Success — exclude password from response
-    const { password: _, ...userWithoutPassword } = user.toJSON();
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user.id, email: user.email,fullname: user.fullname }, // payload
+      process.env.JWT_SECRET,             // secret key
+      { expiresIn: "1h" }                 // expiry
+    );
 
-    res.status(200).json({ message: "Login successful", user: userWithoutPassword });
+    // ✅ Only send token + message
+    res.status(200).json({
+      message: "Login successful",
+      token
+    });
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({ message: "Internal server error" });
