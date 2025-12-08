@@ -1,3 +1,36 @@
+document.addEventListener("DOMContentLoaded", () => {
+  const chatMessages = document.getElementById("chatMessages");
+
+  // Get token from localStorage
+  const token = localStorage.getItem("token");
+
+  // Fetch all messages when dashboard loads
+  axios
+    .get("http://localhost:3000/chat/messages", {
+      headers: {
+        Authorization: token, // attach token directly
+      },
+    })
+    .then((response) => {
+      const messages = response.data; // backend should return array of messages with User info
+
+      // Clear existing messages
+      chatMessages.innerHTML = "";
+
+      // Render each message
+      messages.forEach((msg) => {
+        const msgDiv = document.createElement("div");
+        msgDiv.textContent = `${msg.User.fullname}: ${msg.content}`;
+        chatMessages.appendChild(msgDiv);
+      });
+    })
+    .catch((error) => {
+      console.error("Error fetching messages:", error);
+      alert("Failed to load messages");
+    });
+});
+
+// Send message handler
 function sendMessage(event) {
   event.preventDefault();
 
@@ -20,10 +53,10 @@ function sendMessage(event) {
       }
     )
     .then((response) => {
-      // Show backend response in chat
+      // Show backend response in chat immediately
       const chatMessages = document.getElementById("chatMessages");
       const msgDiv = document.createElement("div");
-      msgDiv.textContent = "You: " + message;
+      msgDiv.textContent = `You: ${message}`;
       chatMessages.appendChild(msgDiv);
 
       // Clear input

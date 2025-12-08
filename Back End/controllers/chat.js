@@ -1,4 +1,5 @@
 const Message = require("../models/messages");
+const User = require("../models/users");
 
 const sendMessage = async (req, res) => {
   try {
@@ -21,4 +22,24 @@ const sendMessage = async (req, res) => {
   }
 };
 
-module.exports = { sendMessage };
+const getMessages = async (req, res) => {
+  try {
+    // Fetch all messages with associated user info
+    const messages = await Message.findAll({
+      include: [
+        {
+          model: User,
+          attributes: ["fullname"], // only return safe fields
+        },
+      ],
+      order: [["createdAt", "ASC"]], // oldest first
+    });
+
+    res.status(200).json(messages);
+  } catch (error) {
+    console.error("Fetch messages error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+module.exports = { sendMessage, getMessages };
