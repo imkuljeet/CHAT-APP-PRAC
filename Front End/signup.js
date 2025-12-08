@@ -15,17 +15,23 @@ function signup(event) {
       password
     };
   
-    // Axios POST request
     axios.post("http://localhost:3000/user/signup", userData)
-      .then(response => {
-        alert("Signup successful!");
-        console.log(response.data);
-        // Optionally redirect
-        // window.location.href = "/login";
-      })
-      .catch(error => {
-        console.error("Error during signup:", error);
-        alert("Signup failed. Please try again.");
-      });
+  .then(response => {
+    alert(response.data.message); // ✅ show backend success message
+    console.log(response.data);
+    // Optionally redirect
+    // window.location.href = "/login";
+  })
+  .catch(error => {
+    console.error("Error during signup:", error);
+
+    // If backend sent a response, show that message
+    if (error.response && error.response.data && error.response.data.message) {
+      alert(error.response.data.message);
+    } else {
+      alert("Signup failed. Please try again.");
+    }
+  });
+
   }
   
