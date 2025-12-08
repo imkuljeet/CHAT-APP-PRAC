@@ -20,7 +20,7 @@ function signup(event) {
     alert(response.data.message); // ✅ show backend success message
     console.log(response.data);
     // Optionally redirect
-    // window.location.href = "/login";
+     window.location.href = "./login.html";
   })
   .catch(error => {
     console.error("Error during signup:", error);
