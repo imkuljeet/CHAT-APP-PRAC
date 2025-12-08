@@ -11,18 +11,20 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("Failed to decode token:", err);
   }
 
-  // Function to fetch and render messages
   async function fetchMessages() {
     try {
       const response = await axios.get("http://localhost:3000/chat/messages", {
         headers: { Authorization: token },
       });
-
+  
       const messages = response.data;
-
+  
+      // ✅ Save messages to localStorage
+      localStorage.setItem("fetchedMessages", JSON.stringify(messages));
+  
       // Clear existing messages
       chatMessages.innerHTML = "";
-
+  
       // Render each message
       messages.forEach((msg) => {
         const msgDiv = document.createElement("div");
@@ -37,12 +39,13 @@ document.addEventListener("DOMContentLoaded", () => {
       console.error("Error fetching messages:", error);
     }
   }
+  
 
   // Initial load
   fetchMessages();
 
   // Refresh messages every 3 seconds
-  setInterval(fetchMessages, 3000);
+  // setInterval(fetchMessages, 3000);
 });
 
 // Send message handler
