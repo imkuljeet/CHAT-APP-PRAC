@@ -13,20 +13,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function fetchMessages() {
     try {
-      const response = await axios.get("http://localhost:3000/chat/messages", {
-        headers: { Authorization: token },
-      });
+      // 1. Load old messages from localStorage
+      let storedMessages = JSON.parse(localStorage.getItem("fetchedMessages")) || [];
+      let lastMessageId = storedMessages.length > 0 ? storedMessages[storedMessages.length - 1].id : 0;
   
-      const messages = response.data;
-  
-      // ✅ Save messages to localStorage
-      localStorage.setItem("fetchedMessages", JSON.stringify(messages));
-  
-      // Clear existing messages
+      // Render stored messages first
       chatMessages.innerHTML = "";
-  
-      // Render each message
-      messages.forEach((msg) => {
+      storedMessages.forEach((msg) => {
         const msgDiv = document.createElement("div");
         if (msg.UserId === currentUserId) {
           msgDiv.textContent = `You: ${msg.content}`;
@@ -35,11 +28,33 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         chatMessages.appendChild(msgDiv);
       });
+  
+      // 2. Fetch only newer messages from API
+      const response = await axios.get(`http://localhost:3000/chat/messages?after=${lastMessageId}`, {
+        headers: { Authorization: token },
+      });
+  
+      const newMessages = response.data;
+  
+      // 3. Merge new messages with old ones
+      const updatedMessages = [...storedMessages, ...newMessages];
+      localStorage.setItem("fetchedMessages", JSON.stringify(updatedMessages));
+  
+      // 4. Render new messages
+      newMessages.forEach((msg) => {
+        const msgDiv = document.createElement("div");
+        if (msg.UserId === currentUserId) {
+          msgDiv.textContent = `You: ${msg.content}`;
+        } else {
+          msgDiv.textContent = `${msg.User.fullname}: ${msg.content}`;
+        }
+        chatMessages.appendChild(msgDiv);
+      });
+  
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
-  }
-  
+  }  
 
   // Initial load
   fetchMessages();
