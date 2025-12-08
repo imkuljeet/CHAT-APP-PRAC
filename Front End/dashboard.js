@@ -4,6 +4,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // Get token from localStorage
   const token = localStorage.getItem("token");
 
+  // Decode token to identify current user
+  let currentUserId = null;
+  try {
+    const decoded = jwt_decode(token); // requires jwt-decode library
+    currentUserId = decoded.id;        // assuming token payload includes { id }
+  } catch (err) {
+    console.error("Failed to decode token:", err);
+  }
+
   // Fetch all messages when dashboard loads
   axios
     .get("http://localhost:3000/chat/messages", {
@@ -20,7 +29,11 @@ document.addEventListener("DOMContentLoaded", () => {
       // Render each message
       messages.forEach((msg) => {
         const msgDiv = document.createElement("div");
-        msgDiv.textContent = `${msg.User.fullname}: ${msg.content}`;
+        if (msg.UserId === currentUserId) {
+          msgDiv.textContent = `You: ${msg.content}`;
+        } else {
+          msgDiv.textContent = `${msg.User.fullname}: ${msg.content}`;
+        }
         chatMessages.appendChild(msgDiv);
       });
     })
