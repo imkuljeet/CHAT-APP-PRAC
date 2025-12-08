@@ -1,32 +1,19 @@
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
+require("dotenv").config(); // load .env variables
+
+const userRoutes = require("./routes/user");
 
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT; // fallback if .env not set
 
 // Middleware
-app.use(cors()); // allow requests from frontend
-app.use(bodyParser.json()); // parse JSON bodies
+app.use(cors());
+app.use(bodyParser.json());
 
-// Simple in-memory "database"
-let users = [];
-
-// Signup route
-app.post("/user/signup", (req, res) => {
-  const { fullname, email, phone, password } = req.body;
-
-  // Basic validation
-  if (!fullname || !email || !phone || !password) {
-    return res.status(400).json({ message: "All fields are required" });
-  }
-
-  // Save user (in-memory for now)
-  const newUser = { fullname, email, phone, password };
-  users.push(newUser);
-
-  res.status(201).json({ message: "User registered successfully", user: newUser });
-});
+// Routes
+app.use("/user", userRoutes);
 
 // Start server
 app.listen(PORT, () => {
