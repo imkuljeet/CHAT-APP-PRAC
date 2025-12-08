@@ -11,6 +11,26 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("Failed to decode token:", err);
   }
 
+  // Dynamically create the "Load Older Messages" button
+  const loadOlderBtn = document.createElement("button");
+  loadOlderBtn.id = "loadOlderBtn";
+  loadOlderBtn.textContent = "Load older messages";
+  loadOlderBtn.style.display = "none"; // hidden by default
+  // Insert button above chat messages
+  chatMessages.parentNode.insertBefore(loadOlderBtn, chatMessages);
+
+  async function renderMessages(messages) {
+    chatMessages.innerHTML = "";
+    messages.forEach((msg) => {
+      const msgDiv = document.createElement("div");
+      msgDiv.textContent =
+        msg.UserId === currentUserId
+          ? `You: ${msg.content}`
+          : `${msg.User.fullname}: ${msg.content}`;
+      chatMessages.appendChild(msgDiv);
+    });
+  }
+
   async function fetchMessages() {
     try {
       // 1. Load old messages from localStorage
@@ -22,16 +42,7 @@ document.addEventListener("DOMContentLoaded", () => {
           : 0;
 
       // Render stored messages first
-      chatMessages.innerHTML = "";
-      storedMessages.forEach((msg) => {
-        const msgDiv = document.createElement("div");
-        if (msg.UserId === currentUserId) {
-          msgDiv.textContent = `You: ${msg.content}`;
-        } else {
-          msgDiv.textContent = `${msg.User.fullname}: ${msg.content}`;
-        }
-        chatMessages.appendChild(msgDiv);
-      });
+      await renderMessages(storedMessages);
 
       // 2. Fetch only newer messages from API
       const response = await axios.get(
@@ -53,20 +64,64 @@ document.addEventListener("DOMContentLoaded", () => {
 
       localStorage.setItem("fetchedMessages", JSON.stringify(updatedMessages));
 
-      // 4. Render new messages
-      newMessages.forEach((msg) => {
-        const msgDiv = document.createElement("div");
-        if (msg.UserId === currentUserId) {
-          msgDiv.textContent = `You: ${msg.content}`;
+      // 4. Render updated messages
+      await renderMessages(updatedMessages);
+
+      // 5. Check if older messages exist → show/hide button
+      if (updatedMessages.length > 0) {
+        const firstMessageId = updatedMessages[0].id;
+        const olderCheck = await axios.get(
+          `http://localhost:3000/chat/messages?before=${firstMessageId}`,
+          { headers: { Authorization: token } }
+        );
+        if (olderCheck.data.length === 0) {
+          loadOlderBtn.style.display = "none"; // hide if none
         } else {
-          msgDiv.textContent = `${msg.User.fullname}: ${msg.content}`;
+          loadOlderBtn.style.display = "block"; // show if available
         }
-        chatMessages.appendChild(msgDiv);
-      });
+      } else {
+        loadOlderBtn.style.display = "none";
+      }
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
   }
+
+  // Load older messages handler
+  loadOlderBtn.addEventListener("click", async () => {
+    let storedMessages =
+      JSON.parse(localStorage.getItem("fetchedMessages")) || [];
+    let firstMessageId =
+      storedMessages.length > 0 ? storedMessages[0].id : null;
+    if (!firstMessageId) return;
+
+    try {
+      const response = await axios.get(
+        `http://localhost:3000/chat/messages?before=${firstMessageId}`,
+        {
+          headers: { Authorization: token },
+        }
+      );
+
+      const olderMessages = response.data;
+
+      if (olderMessages.length === 0) {
+        // No older messages → hide button
+        loadOlderBtn.style.display = "none";
+        return;
+      }
+
+      // Prepend older messages to stored list
+      const updatedMessages = [...olderMessages, ...storedMessages];
+
+      localStorage.setItem("fetchedMessages", JSON.stringify(updatedMessages));
+
+      // Render all messages including older ones
+      await renderMessages(updatedMessages);
+    } catch (error) {
+      console.error("Error loading older messages:", error);
+    }
+  });
 
   // Initial load
   fetchMessages();
