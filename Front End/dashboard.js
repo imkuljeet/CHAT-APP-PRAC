@@ -6,7 +6,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentUserId = null;
   try {
     const decoded = jwt_decode(token); // requires jwt-decode library
-    currentUserId = decoded.id;        // assuming token payload includes { id }
+    currentUserId = decoded.id; // assuming token payload includes { id }
   } catch (err) {
     console.error("Failed to decode token:", err);
   }
@@ -14,9 +14,13 @@ document.addEventListener("DOMContentLoaded", () => {
   async function fetchMessages() {
     try {
       // 1. Load old messages from localStorage
-      let storedMessages = JSON.parse(localStorage.getItem("fetchedMessages")) || [];
-      let lastMessageId = storedMessages.length > 0 ? storedMessages[storedMessages.length - 1].id : 0;
-  
+      let storedMessages =
+        JSON.parse(localStorage.getItem("fetchedMessages")) || [];
+      let lastMessageId =
+        storedMessages.length > 0
+          ? storedMessages[storedMessages.length - 1].id
+          : 0;
+
       // Render stored messages first
       chatMessages.innerHTML = "";
       storedMessages.forEach((msg) => {
@@ -28,18 +32,27 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         chatMessages.appendChild(msgDiv);
       });
-  
+
       // 2. Fetch only newer messages from API
-      const response = await axios.get(`http://localhost:3000/chat/messages?after=${lastMessageId}`, {
-        headers: { Authorization: token },
-      });
-  
+      const response = await axios.get(
+        `http://localhost:3000/chat/messages?after=${lastMessageId}`,
+        {
+          headers: { Authorization: token },
+        }
+      );
+
       const newMessages = response.data;
-  
+
       // 3. Merge new messages with old ones
-      const updatedMessages = [...storedMessages, ...newMessages];
+      let updatedMessages = [...storedMessages, ...newMessages];
+
+      // Keep only the last 5 messages
+      if (updatedMessages.length > 5) {
+        updatedMessages = updatedMessages.slice(-5);
+      }
+
       localStorage.setItem("fetchedMessages", JSON.stringify(updatedMessages));
-  
+
       // 4. Render new messages
       newMessages.forEach((msg) => {
         const msgDiv = document.createElement("div");
@@ -50,11 +63,10 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         chatMessages.appendChild(msgDiv);
       });
-  
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
-  }  
+  }
 
   // Initial load
   fetchMessages();
