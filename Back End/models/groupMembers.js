@@ -22,11 +22,4 @@ const GroupMember = sequelize.define("GroupMember", {
   timestamps: false, // we already have joinedAt
 });
 
-// Associations 
-GroupMember.belongsTo(User, { foreignKey: "UserId" }); 
-GroupMember.belongsTo(Group, { foreignKey: "GroupId" }); 
-
-User.belongsToMany(Group, { through: GroupMember }); 
-Group.belongsToMany(User, { through: GroupMember });
-
 module.exports = GroupMember;

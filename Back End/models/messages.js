@@ -16,8 +16,4 @@ const Message = sequelize.define(
   }
 );
 
-// Associations
-User.hasMany(Message);       // one user can send many messages
-Message.belongsTo(User);     // each message belongs to a single user
-
 module.exports = Message;
