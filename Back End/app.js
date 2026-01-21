@@ -69,20 +69,23 @@ io.on("connection", (socket) => {
         UserId: userId,
         GroupId: groupId,
       });
-
-      // Broadcast to everyone in the group room
+  
+      // Fetch user fullname
+      const user = await User.findByPk(userId, { attributes: ["fullname"] });
+  
       io.to(`group_${groupId}`).emit("newMessage", {
         id: newMessage.id,
         content: newMessage.content,
         UserId: userId,
         GroupId: groupId,
         createdAt: newMessage.createdAt,
+        User: { fullname: user.fullname }, // <-- attach fullname here
       });
     } catch (err) {
       console.error("Error saving message:", err);
     }
   });
-
+  
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });
