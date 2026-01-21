@@ -17,5 +17,9 @@ router.post("/add-member", authenticate, groupController.addMember);
 // Delete member from group
 router.delete("/:id/remove-member/:memberId", authenticate, groupController.removeMember);
 
+// Make a member admin
+router.post("/:id/make-admin", authenticate, groupController.makeAdmin);
+
+
 
 module.exports = router;

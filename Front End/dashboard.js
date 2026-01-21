@@ -110,7 +110,22 @@ document.addEventListener("DOMContentLoaded", () => {
                       const makeAdminBtn = document.createElement("button");
                       makeAdminBtn.textContent = "Make Admin";
                       makeAdminBtn.style.marginLeft = "10px";
-                    
+                      
+                      makeAdminBtn.addEventListener("click", async (e) => {
+                        e.stopPropagation(); // prevent triggering parent clicks
+                        try {
+                          await axios.post(
+                            `http://localhost:3000/group/${group.id}/make-admin`,
+                            { memberId: m.id }, // send memberId in body
+                            { headers: { Authorization: token } }
+                          );
+                          alert(`${m.fullname} is now an admin`);
+                        } catch (err) {
+                          console.error("Error making admin:", err);
+                          alert("Failed to make admin");
+                        }
+                      });
+                      
                       //Delete Member button
                       const deleteBtn = document.createElement("button");
                       deleteBtn.textContent = "Delete Member";

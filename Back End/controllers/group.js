@@ -152,4 +152,28 @@ exports.removeMember = async (req, res) => {
   }
 };
 
+// Promote a member to admin
+exports.makeAdmin = async (req, res) => {
+  try {
+    const groupId = req.params.id;
+    const { memberId } = req.body; // frontend will send memberId in request body
+
+    const member = await GroupMember.findOne({
+      where: { GroupId: groupId, UserId: memberId }
+    });
+
+    if (!member) {
+      return res.status(404).json({ error: "Member not found in this group" });
+    }
+
+    member.role = "admin";
+    await member.save();
+
+    res.json({ message: "Member promoted to admin successfully" });
+  } catch (err) {
+    console.error("Error making admin:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
 
