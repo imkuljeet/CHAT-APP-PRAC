@@ -56,7 +56,7 @@ const login = async (req, res) => {
     const token = jwt.sign(
       { id: user.id, email: user.email,fullname: user.fullname }, // payload
       process.env.JWT_SECRET,             // secret key
-      { expiresIn: "1h" }                 // expiry
+      // { expiresIn: "1h" }                 // expiry
     );
 
     // ✅ Only send token + message

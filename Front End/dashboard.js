@@ -23,7 +23,7 @@ document.addEventListener("DOMContentLoaded", () => {
         headers: { Authorization: token }
       });
       const groups = response.data;
-
+  
       groupsContainer.innerHTML = "<h3>Your Groups</h3>";
       if (groups.length === 0) {
         groupsContainer.innerHTML += "<p>No groups yet. Create one!</p>";
@@ -32,6 +32,31 @@ document.addEventListener("DOMContentLoaded", () => {
         groups.forEach(group => {
           const li = document.createElement("li");
           li.textContent = group.name;
+          li.style.cursor = "pointer";
+  
+          // Add click handler for each group
+          li.addEventListener("click", () => {
+            // Remove any existing button
+            const existingBtn = document.getElementById("addMemberBtn");
+            if (existingBtn) existingBtn.remove();
+  
+            // Create new "Add Members" button
+            const addBtn = document.createElement("button");
+            addBtn.id = "addMemberBtn";
+            addBtn.textContent = `Add Members to ${group.name}`;
+            addBtn.style.marginLeft = "10px";
+  
+            // Append button right after the clicked group
+            li.appendChild(addBtn);
+  
+            // Button click handler
+            addBtn.addEventListener("click", () => {
+              alert(`Add members to group: ${group.name}`);
+              // Here you can redirect to an "add members" page or open a modal
+              // window.location.href = `add-members.html?groupId=${group.id}`;
+            });
+          });
+  
           ul.appendChild(li);
         });
         groupsContainer.appendChild(ul);
