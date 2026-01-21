@@ -30,6 +30,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       alert(`Member with email "${email}" added to group ${groupId}`);
       form.reset();
+      window.location.href = "./dashboard.html";
     } catch (err) {
       console.error("Error adding member:", err);
       if (err.response && err.response.data && err.response.data.error) {

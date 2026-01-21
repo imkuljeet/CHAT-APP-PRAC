@@ -91,15 +91,16 @@ document.addEventListener("DOMContentLoaded", () => {
                   
                     memberLi.addEventListener("click", (e) => {
                       e.stopPropagation();
-                  
+                    
                       // Remove any existing action buttons
                       document.querySelectorAll(".member-actions").forEach(actions => actions.remove());
-                  
-                      // Only show buttons if the member is NOT already an admin
-                      if (m.role !== "admin") {
+                    
+                      // ✅ Only show buttons if current user is admin AND the member is not admin
+                      const currentUser = members.find(u => u.id === currentUserId);
+                      if (currentUser && currentUser.role === "admin" && m.role !== "admin") {
                         const actionsDiv = document.createElement("div");
                         actionsDiv.className = "member-actions";
-                  
+                    
                         // Make Admin button
                         const makeAdminBtn = document.createElement("button");
                         makeAdminBtn.textContent = "Make Admin";
@@ -119,12 +120,13 @@ document.addEventListener("DOMContentLoaded", () => {
                             alert("Failed to make admin");
                           }
                         });
-                  
+                    
                         // Delete Member button
                         const deleteBtn = document.createElement("button");
                         deleteBtn.textContent = "Delete Member";
                         deleteBtn.style.marginLeft = "10px";
-                        deleteBtn.addEventListener("click", async () => {
+                        deleteBtn.addEventListener("click", async (e) => {
+                          e.stopPropagation();
                           try {
                             await axios.delete(
                               `http://localhost:3000/group/${group.id}/remove-member/${m.id}`,
@@ -137,12 +139,12 @@ document.addEventListener("DOMContentLoaded", () => {
                             alert("Failed to delete member");
                           }
                         });
-                  
+                    
                         actionsDiv.appendChild(makeAdminBtn);
                         actionsDiv.appendChild(deleteBtn);
                         memberLi.appendChild(actionsDiv);
                       }
-                    });
+                    });                    
                   
                     memberUl.appendChild(memberLi);
                   });

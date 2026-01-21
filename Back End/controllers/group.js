@@ -127,14 +127,23 @@ exports.getMembers = async (req, res) => {
   }
 };
 
-// Remove a member from a group
+// Remove a member from a group (admin-only)
 exports.removeMember = async (req, res) => {
   try {
     const groupId = req.params.id;
     const memberId = req.params.memberId;
+    const requesterId = req.user.id; // comes from authenticate middleware
 
-    // console.log("MEMBBEBREB",groupId,memberId);
+    // Check if requester is an admin in this group
+    const requesterMembership = await GroupMember.findOne({
+      where: { GroupId: groupId, UserId: requesterId }
+    });
 
+    if (!requesterMembership || requesterMembership.role !== "admin") {
+      return res.status(403).json({ error: "Only admins can remove members" });
+    }
+
+    // Find the target member
     const member = await GroupMember.findOne({
       where: { GroupId: groupId, UserId: memberId }
     });
@@ -156,8 +165,19 @@ exports.removeMember = async (req, res) => {
 exports.makeAdmin = async (req, res) => {
   try {
     const groupId = req.params.id;
-    const { memberId } = req.body; // frontend will send memberId in request body
+    const { memberId } = req.body;
+    const requesterId = req.user.id; // comes from authenticate middleware
 
+    // Check if requester is an admin in this group
+    const requesterMembership = await GroupMember.findOne({
+      where: { GroupId: groupId, UserId: requesterId }
+    });
+
+    if (!requesterMembership || requesterMembership.role !== "admin") {
+      return res.status(403).json({ error: "Only admins can promote members" });
+    }
+
+    // Find the target member
     const member = await GroupMember.findOne({
       where: { GroupId: groupId, UserId: memberId }
     });
@@ -166,6 +186,7 @@ exports.makeAdmin = async (req, res) => {
       return res.status(404).json({ error: "Member not found in this group" });
     }
 
+    // Promote to admin
     member.role = "admin";
     await member.save();
 
@@ -175,5 +196,6 @@ exports.makeAdmin = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
 
 
