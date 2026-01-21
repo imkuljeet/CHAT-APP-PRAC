@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Create Group</title>
+</head>
+<body>
+  <h2>Create a New Group</h2>
+
+  <!-- Group creation form -->
+  <form onsubmit="createGroup(event)">
+    <label for="groupNameInput">Group Name:</label>
+    <input type="text" id="groupNameInput" placeholder="Enter group name..." required>
+    <button type="submit">Create Group</button>
+  </form>
+
+  <!-- Axios -->
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script src="name-group.js"></script>
+</body>
+</html>

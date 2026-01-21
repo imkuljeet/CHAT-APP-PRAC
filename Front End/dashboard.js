@@ -159,3 +159,7 @@ async function sendMessage(event) {
     alert("Failed to send message");
   }
 }
+
+document.getElementById('createGroupBtn').addEventListener('click',()=>{
+  window.location.href = 'name-group.html';
+})
