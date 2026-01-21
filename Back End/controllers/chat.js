@@ -32,13 +32,18 @@ const sendMessage = async (req, res) => {
   }
 };
 
-// Fetch messages by range (newer or older)
 const getMessages = async (req, res) => {
   try {
     const afterId = req.query.after ? parseInt(req.query.after, 10) : null;
     const beforeId = req.query.before ? parseInt(req.query.before, 10) : null;
+    const groupId = req.query.groupId; // <-- get groupId from query
 
-    let where = {};
+    if (!groupId) {
+      return res.status(400).json({ error: "groupId is required" });
+    }
+
+    let where = { GroupId: groupId }; // filter by group
+
     if (afterId) {
       where.id = { [Op.gt]: afterId }; // newer messages
     }
