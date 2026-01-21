@@ -1,7 +1,8 @@
+let socket = null;
+let currentUserId = null; // <-- make it global
+
 document.addEventListener("DOMContentLoaded", () => {
   const token = localStorage.getItem("token");
-  let currentUserId = null;
-
   // Decode token to identify current user
   try {
     const decoded = jwt_decode(token); // requires jwt-decode library
@@ -9,6 +10,11 @@ document.addEventListener("DOMContentLoaded", () => {
   } catch (err) {
     console.error("Failed to decode token:", err);
   }
+
+  // === Socket.io connection ===
+   socket = io("http://localhost:3000", {
+    auth: { token }, // optional if you want to send token during handshake
+  });
 
   // === Groups Section ===
   const groupsContainer = document.createElement("div");
@@ -33,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
           li.textContent = group.name;
           li.style.cursor = "pointer";
 
-          li.addEventListener("click", () => {
+          li.addEventListener("click", async () => {
             // Save selected groupId
             localStorage.setItem("selectedGroupId", group.id);
 
@@ -65,21 +71,20 @@ document.addEventListener("DOMContentLoaded", () => {
             showBtn.style.marginLeft = "10px";
             li.appendChild(showBtn);
 
-            showBtn.addEventListener("click", async (e) => {
+            showBtn.addEventListener("click", async () => {
               try {
-                // e.stopPropagation();
                 const res = await axios.get(
                   `http://localhost:3000/group/${group.id}/members`,
                   { headers: { Authorization: token } }
                 );
                 const members = res.data;
-            
+
                 const oldList = document.getElementById("membersList");
                 if (oldList) oldList.remove();
-            
+
                 const membersDiv = document.createElement("div");
                 membersDiv.id = "membersList";
-            
+
                 if (members.length === 0) {
                   membersDiv.textContent = "No members in this group.";
                 } else {
@@ -88,20 +93,16 @@ document.addEventListener("DOMContentLoaded", () => {
                     const memberLi = document.createElement("li");
                     memberLi.textContent = `${m.fullname} (${m.role})`;
                     memberLi.style.cursor = "pointer";
-                  
+
                     memberLi.addEventListener("click", (e) => {
                       e.stopPropagation();
-                    
-                      // Remove any existing action buttons
                       document.querySelectorAll(".member-actions").forEach(actions => actions.remove());
-                    
-                      // ✅ Only show buttons if current user is admin AND the member is not admin
+
                       const currentUser = members.find(u => u.id === currentUserId);
                       if (currentUser && currentUser.role === "admin" && m.role !== "admin") {
                         const actionsDiv = document.createElement("div");
                         actionsDiv.className = "member-actions";
-                    
-                        // Make Admin button
+
                         const makeAdminBtn = document.createElement("button");
                         makeAdminBtn.textContent = "Make Admin";
                         makeAdminBtn.style.marginLeft = "10px";
@@ -113,20 +114,18 @@ document.addEventListener("DOMContentLoaded", () => {
                               { headers: { Authorization: token } }
                             );
                             alert(`${m.fullname} is now an admin`);
-                            m.role = "admin"; // update locally
-                            memberLi.textContent = `${m.fullname} (admin)`; // update UI
+                            m.role = "admin";
+                            memberLi.textContent = `${m.fullname} (admin)`;
                           } catch (err) {
                             console.error("Error making admin:", err);
                             alert("Failed to make admin");
                           }
                         });
-                    
-                        // Delete Member button
+
                         const deleteBtn = document.createElement("button");
                         deleteBtn.textContent = "Delete Member";
                         deleteBtn.style.marginLeft = "10px";
-                        deleteBtn.addEventListener("click", async (e) => {
-                          e.stopPropagation();
+                        deleteBtn.addEventListener("click", async () => {
                           try {
                             await axios.delete(
                               `http://localhost:3000/group/${group.id}/remove-member/${m.id}`,
@@ -139,16 +138,16 @@ document.addEventListener("DOMContentLoaded", () => {
                             alert("Failed to delete member");
                           }
                         });
-                    
+
                         actionsDiv.appendChild(makeAdminBtn);
                         actionsDiv.appendChild(deleteBtn);
                         memberLi.appendChild(actionsDiv);
                       }
-                    });                    
-                  
+                    });
+
                     memberUl.appendChild(memberLi);
                   });
-                  
+
                   membersDiv.appendChild(memberUl);
                 }
                 li.appendChild(membersDiv);
@@ -156,9 +155,12 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.error("Error fetching members:", err);
                 alert("Failed to load members");
               }
-            });            
+            });
 
-            // Fetch messages for this group
+            // Join group room via socket
+            socket.emit("joinGroup", group.id);
+
+            // Fetch initial messages once
             fetchMessages(group.id);
           });
 
@@ -181,7 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
       msgDiv.textContent =
         msg.UserId === currentUserId
           ? `You: ${msg.content}`
-          : `${msg.User.fullname}: ${msg.content}`;
+          : `${msg.User?.fullname || "User"}: ${msg.content}`;
       chatMessages.appendChild(msgDiv);
     });
   }
@@ -199,24 +201,35 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+  // Listen for new messages via socket
+  socket.on("newMessage", (msg) => {
+    const chatMessages = document.getElementById("chatMessages");
+    const msgDiv = document.createElement("div");
+    console.log("MSG",msg);
+    msgDiv.textContent =
+      msg.UserId === currentUserId
+        ? `You: ${msg.content}`
+        : `${msg.User?.fullname || "User"}: ${msg.content}`;
+    chatMessages.appendChild(msgDiv);
+  });
+
   // Initial load
   fetchGroups();
 
   // Redirect to group creation page
-  document.getElementById('createGroupBtn').addEventListener('click', () => {
-    window.location.href = 'name-group.html';
+  document.getElementById("createGroupBtn").addEventListener("click", () => {
+    window.location.href = "name-group.html";
   });
 });
 
-// Send message handler
-async function sendMessage(event) {
+// Send message handler (via socket)
+function sendMessage(event) {
   event.preventDefault();
 
   const input = document.getElementById("messageInput");
   const message = input.value.trim();
   if (message === "") return;
 
-  const token = localStorage.getItem("token");
   const groupId = localStorage.getItem("selectedGroupId");
 
   if (!groupId) {
@@ -224,21 +237,12 @@ async function sendMessage(event) {
     return;
   }
 
-  try {
-    await axios.post(
-      "http://localhost:3000/chat/send",
-      { message, groupId },
-      { headers: { Authorization: token } }
-    );
+  // Emit message to server
+  socket.emit("sendMessage", {
+    message,
+    groupId,
+    userId: currentUserId,
+  });
 
-    const chatMessages = document.getElementById("chatMessages");
-    const msgDiv = document.createElement("div");
-    msgDiv.textContent = `You: ${message}`;
-    chatMessages.appendChild(msgDiv);
-
-    input.value = "";
-  } catch (error) {
-    console.error("Error sending message:", error);
-    alert("Failed to send message");
-  }
+  input.value = "";
 }
