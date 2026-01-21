@@ -1,6 +1,7 @@
 const Message = require("../models/messages");
 const User = require("../models/users");
 const Group = require("../models/groups");
+const ArchivedChat = require("../models/archivedChat");
 
 const { Op } = require("sequelize");
 
@@ -36,32 +37,46 @@ const getMessages = async (req, res) => {
   try {
     const afterId = req.query.after ? parseInt(req.query.after, 10) : null;
     const beforeId = req.query.before ? parseInt(req.query.before, 10) : null;
-    const groupId = req.query.groupId; // <-- get groupId from query
+    const groupId = req.query.groupId;
 
     if (!groupId) {
       return res.status(400).json({ error: "groupId is required" });
     }
 
-    let where = { GroupId: groupId }; // filter by group
+    let where = { GroupId: groupId };
 
     if (afterId) {
-      where.id = { [Op.gt]: afterId }; // newer messages
+      where.id = { [Op.gt]: afterId };
     }
     if (beforeId) {
-      where.id = { [Op.lt]: beforeId }; // older messages
+      where.id = { [Op.lt]: beforeId };
     }
 
-    const messages = await Message.findAll({
+    // First try fetching from Message table
+    let messages = await Message.findAll({
       where,
       include: [
         {
           model: User,
-          attributes: ["fullname"], // safe fields only
+          attributes: ["fullname"],
         },
       ],
       order: [["createdAt", "ASC"]],
-      // limit: 5, // optional: fetch in small chunks
     });
+
+    // If empty, fallback to ArchivedChat
+    if (messages.length === 0) {
+      messages = await ArchivedChat.findAll({
+        where,
+        include: [
+          {
+            model: User,
+            attributes: ["fullname"],
+          },
+        ],
+        order: [["createdAt", "ASC"]],
+      });
+    }
 
     res.status(200).json(messages);
   } catch (error) {

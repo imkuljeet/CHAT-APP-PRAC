@@ -29,6 +29,13 @@ Group.belongsToMany(User, { through: GroupMember, foreignKey: "GroupId" });
 GroupMember.belongsTo(User, { foreignKey: "UserId" });
 GroupMember.belongsTo(Group, { foreignKey: "GroupId" });
 
+// ArchivedChat associations
+User.hasMany(ArchivedChat, { foreignKey: "UserId" });
+ArchivedChat.belongsTo(User, { foreignKey: "UserId" });
+
+Group.hasMany(ArchivedChat, { foreignKey: "GroupId" });
+ArchivedChat.belongsTo(Group, { foreignKey: "GroupId" });
+
 // Routes
 const userRoutes = require("./routes/user");
 const chatRoutes = require("./routes/chat");
