@@ -110,17 +110,45 @@ exports.getMembers = async (req, res) => {
       include: [
         {
           model: User,
-          attributes: ["fullname"]
+          attributes: ["id", "fullname"] // include id here
         }
       ]
-    });  
+    });
 
-    // const members = await GroupMember.findAll();
-
-    // console.log(members);
-    res.json(members.map(m => m.User)); // return just user info
+    res.json(
+      members.map(m => ({
+        id: m.User.id,          // 👈 this is the memberId you need
+        fullname: m.User.fullname,
+        role: m.role            // optional, useful for showing admin/member
+      }))
+    );
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch members" });
+  }
+};
+
+// Remove a member from a group
+exports.removeMember = async (req, res) => {
+  try {
+    const groupId = req.params.id;
+    const memberId = req.params.memberId;
+
+    // console.log("MEMBBEBREB",groupId,memberId);
+
+    const member = await GroupMember.findOne({
+      where: { GroupId: groupId, UserId: memberId }
+    });
+
+    if (!member) {
+      return res.status(404).json({ error: "Member not found in this group" });
+    }
+
+    await member.destroy();
+
+    res.json({ message: "Member removed successfully" });
+  } catch (err) {
+    console.error("Error removing member:", err);
+    res.status(500).json({ error: "Internal server error" });
   }
 };
 

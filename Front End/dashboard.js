@@ -111,11 +111,26 @@ document.addEventListener("DOMContentLoaded", () => {
                       makeAdminBtn.textContent = "Make Admin";
                       makeAdminBtn.style.marginLeft = "10px";
                     
-                      // Delete Member button
+                      //Delete Member button
                       const deleteBtn = document.createElement("button");
                       deleteBtn.textContent = "Delete Member";
                       deleteBtn.style.marginLeft = "10px";
-                    
+                      
+                      deleteBtn.addEventListener("click", async (e) => {
+                        e.stopPropagation(); // prevent triggering parent clicks
+                        try {
+                          await axios.delete(
+                            `http://localhost:3000/group/${group.id}/remove-member/${m.id}`,
+                            { headers: { Authorization: token } }
+                          );
+                          alert(`${m.fullname} has been removed`);
+                          memberLi.remove(); // remove from UI immediately
+                        } catch (err) {
+                          console.error("Error deleting member:", err);
+                          alert("Failed to delete member");
+                        }
+                      });                   
+
                       actionsDiv.appendChild(makeAdminBtn);
                       actionsDiv.appendChild(deleteBtn);
                       memberLi.appendChild(actionsDiv);

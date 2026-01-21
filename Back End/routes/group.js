@@ -14,4 +14,8 @@ router.get("/list", authenticate, groupController.listGroups);
 router.post("/add-member", authenticate, groupController.addMember);
 // routes/group.js
 
+// Delete member from group
+router.delete("/:id/remove-member/:memberId", authenticate, groupController.removeMember);
+
+
 module.exports = router;
