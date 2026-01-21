@@ -60,7 +60,7 @@ const getMessages = async (req, res) => {
         },
       ],
       order: [["createdAt", "ASC"]],
-      limit: 5, // optional: fetch in small chunks
+      // limit: 5, // optional: fetch in small chunks
     });
 
     res.status(200).json(messages);
