@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
             addBtn.addEventListener("click", () => {
               alert(`Add members to group: ${group.name}`);
               // Here you can redirect to an "add members" page or open a modal
-              // window.location.href = `add-members.html?groupId=${group.id}`;
+              window.location.href = `add-members.html?groupId=${group.id}`;
             });
           });
   

@@ -1,4 +1,6 @@
 const Group = require("../models/groups");
+const User = require("../models/users");
+const GroupMember = require("../models/groupMembers");
 
 exports.createGroup = async (req, res) => {
   try {
@@ -35,3 +37,47 @@ exports.listGroups = async (req, res) => {
     res.status(500).json({ error: "Internal server error" });
   }
 };
+
+// Add a member to a group
+exports.addMember = async (req, res) => {
+  try {
+    const { groupId, email } = req.body;
+
+    if (!groupId || !email) {
+      return res.status(400).json({ error: "Group ID and email are required" });
+    }
+
+    // Check if group exists
+    const group = await Group.findByPk(groupId);
+    if (!group) {
+      return res.status(404).json({ error: "Group not found" });
+    }
+
+    // Check if user exists
+    const user = await User.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // Check if already a member
+    const existingMember = await GroupMember.findOne({
+      where: { GroupId: groupId, UserId: user.id }
+    });
+    if (existingMember) {
+      return res.status(409).json({ error: "User is already a member of this group" });
+    }
+
+    // Add user to group
+    const newMember = await GroupMember.create({
+      GroupId: groupId,
+      UserId: user.id,
+      role: "member"
+    });
+
+    res.status(201).json({ message: "Member added successfully", data: newMember });
+  } catch (err) {
+    console.error("Error adding member:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
