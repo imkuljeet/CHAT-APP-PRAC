@@ -40,7 +40,18 @@ exports.createGroup = async (req, res) => {
 // Optional: list all groups
 exports.listGroups = async (req, res) => {
   try {
-    const groups = await Group.findAll();
+    const userId = req.user.id; // current logged-in user
+
+    const groups = await Group.findAll({
+      include: [
+        {
+          model: User,
+          where: { id: userId },   // only groups that have this user
+          attributes: []           // don’t need user fields in the response
+        }
+      ]
+    });
+
     res.json(groups);
   } catch (err) {
     console.error("Error fetching groups:", err);
