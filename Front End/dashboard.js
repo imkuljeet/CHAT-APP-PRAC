@@ -86,73 +86,67 @@ document.addEventListener("DOMContentLoaded", () => {
                   const memberUl = document.createElement("ul");
                   members.forEach(m => {
                     const memberLi = document.createElement("li");
-                    memberLi.textContent = m.fullname;
+                    memberLi.textContent = `${m.fullname} (${m.role})`;
                     memberLi.style.cursor = "pointer";
-            
+                  
                     memberLi.addEventListener("click", (e) => {
                       e.stopPropagation();
-                    
-                      // 🔹 First remove all other member-actions in the list
+                  
+                      // Remove any existing action buttons
                       document.querySelectorAll(".member-actions").forEach(actions => actions.remove());
-                    
-                      // 🔹 Then check if this member already has actions (toggle behavior)
-                      const existingActions = memberLi.querySelector(".member-actions");
-                      if (existingActions) {
-                        existingActions.remove();
-                        return;
+                  
+                      // Only show buttons if the member is NOT already an admin
+                      if (m.role !== "admin") {
+                        const actionsDiv = document.createElement("div");
+                        actionsDiv.className = "member-actions";
+                  
+                        // Make Admin button
+                        const makeAdminBtn = document.createElement("button");
+                        makeAdminBtn.textContent = "Make Admin";
+                        makeAdminBtn.style.marginLeft = "10px";
+                        makeAdminBtn.addEventListener("click", async () => {
+                          try {
+                            await axios.post(
+                              `http://localhost:3000/group/${group.id}/make-admin`,
+                              { memberId: m.id },
+                              { headers: { Authorization: token } }
+                            );
+                            alert(`${m.fullname} is now an admin`);
+                            m.role = "admin"; // update locally
+                            memberLi.textContent = `${m.fullname} (admin)`; // update UI
+                          } catch (err) {
+                            console.error("Error making admin:", err);
+                            alert("Failed to make admin");
+                          }
+                        });
+                  
+                        // Delete Member button
+                        const deleteBtn = document.createElement("button");
+                        deleteBtn.textContent = "Delete Member";
+                        deleteBtn.style.marginLeft = "10px";
+                        deleteBtn.addEventListener("click", async () => {
+                          try {
+                            await axios.delete(
+                              `http://localhost:3000/group/${group.id}/remove-member/${m.id}`,
+                              { headers: { Authorization: token } }
+                            );
+                            alert(`${m.fullname} has been removed`);
+                            memberLi.remove();
+                          } catch (err) {
+                            console.error("Error deleting member:", err);
+                            alert("Failed to delete member");
+                          }
+                        });
+                  
+                        actionsDiv.appendChild(makeAdminBtn);
+                        actionsDiv.appendChild(deleteBtn);
+                        memberLi.appendChild(actionsDiv);
                       }
-                    
-                      // Create action buttons container
-                      const actionsDiv = document.createElement("div");
-                      actionsDiv.className = "member-actions";
-                    
-                      // Make Admin button
-                      const makeAdminBtn = document.createElement("button");
-                      makeAdminBtn.textContent = "Make Admin";
-                      makeAdminBtn.style.marginLeft = "10px";
-                      
-                      makeAdminBtn.addEventListener("click", async (e) => {
-                        e.stopPropagation(); // prevent triggering parent clicks
-                        try {
-                          await axios.post(
-                            `http://localhost:3000/group/${group.id}/make-admin`,
-                            { memberId: m.id }, // send memberId in body
-                            { headers: { Authorization: token } }
-                          );
-                          alert(`${m.fullname} is now an admin`);
-                        } catch (err) {
-                          console.error("Error making admin:", err);
-                          alert("Failed to make admin");
-                        }
-                      });
-                      
-                      //Delete Member button
-                      const deleteBtn = document.createElement("button");
-                      deleteBtn.textContent = "Delete Member";
-                      deleteBtn.style.marginLeft = "10px";
-                      
-                      deleteBtn.addEventListener("click", async (e) => {
-                        e.stopPropagation(); // prevent triggering parent clicks
-                        try {
-                          await axios.delete(
-                            `http://localhost:3000/group/${group.id}/remove-member/${m.id}`,
-                            { headers: { Authorization: token } }
-                          );
-                          alert(`${m.fullname} has been removed`);
-                          memberLi.remove(); // remove from UI immediately
-                        } catch (err) {
-                          console.error("Error deleting member:", err);
-                          alert("Failed to delete member");
-                        }
-                      });                   
-
-                      actionsDiv.appendChild(makeAdminBtn);
-                      actionsDiv.appendChild(deleteBtn);
-                      memberLi.appendChild(actionsDiv);
-                    });                                 
-            
+                    });
+                  
                     memberUl.appendChild(memberLi);
                   });
+                  
                   membersDiv.appendChild(memberUl);
                 }
                 li.appendChild(membersDiv);
