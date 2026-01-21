@@ -1,19 +1,28 @@
 const Message = require("../models/messages");
 const User = require("../models/users");
+const Group = require("../models/groups");
+
 const { Op } = require("sequelize");
 
 // Send a new message
 const sendMessage = async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, groupId } = req.body;  // include groupId
 
-    if (!message) {
-      return res.status(400).json({ message: "Message is required" });
+    if (!message || !groupId) {
+      return res.status(400).json({ message: "Message and groupId are required" });
+    }
+
+    // Check if group exists (optional but recommended)
+    const group = await Group.findByPk(groupId);
+    if (!group) {
+      return res.status(404).json({ message: "Group not found" });
     }
 
     const newMessage = await Message.create({
       content: message,
       UserId: req.user.id,
+      GroupId: groupId,   // store groupId with the message
     });
 
     res.status(201).json({ message: "Message stored", data: newMessage });

@@ -36,6 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
   
           li.addEventListener("click", () => {
             // Remove any existing buttons
+            localStorage.setItem("selectedGroupId", group.id);
             const existingAddBtn = document.getElementById("addMemberBtn");
             if (existingAddBtn) existingAddBtn.remove();
             const existingShowBtn = document.getElementById("showMembersBtn");
@@ -234,11 +235,17 @@ async function sendMessage(event) {
   if (message === "") return;
 
   const token = localStorage.getItem("token");
+  const groupId = localStorage.getItem("selectedGroupId"); // retrieve stored groupId
+
+  if (!groupId) {
+    alert("Please select a group before sending a message.");
+    return;
+  }
 
   try {
     await axios.post(
       "http://localhost:3000/chat/send",
-      { message },
+      { message, groupId }, // include groupId in payload
       { headers: { Authorization: token } }
     );
 
