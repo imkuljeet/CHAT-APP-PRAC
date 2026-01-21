@@ -5,6 +5,7 @@ const GroupMember = require("../models/groupMembers");
 exports.createGroup = async (req, res) => {
   try {
     const { name } = req.body;
+    const userId = req.user.id; // assuming your auth middleware attaches user info
 
     if (!name) {
       return res.status(400).json({ error: "Group name is required" });
@@ -13,14 +14,23 @@ exports.createGroup = async (req, res) => {
     // Check if group already exists
     const existingGroup = await Group.findOne({ where: { name } });
     if (existingGroup) {
-      return res.status(409).json({ 
-        error: "Group name already exists. Please choose another name." 
-      });
+      return res.status(409).json({ error: "Group name already exists. Please choose another name." });
     }
 
     // Create new group
     const group = await Group.create({ name });
-    res.status(201).json({ message: "Group created successfully", data: group });
+
+    // Automatically add creator as a member (admin)
+    await GroupMember.create({
+      GroupId: group.id,
+      UserId: userId,
+      role: "admin"
+    });
+
+    res.status(201).json({ 
+      message: "Group created successfully and you are added as admin", 
+      data: group 
+    });
   } catch (err) {
     console.error("Error creating group:", err);
     res.status(500).json({ error: "Internal server error" });
