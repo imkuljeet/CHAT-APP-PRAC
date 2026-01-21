@@ -81,3 +81,26 @@ exports.addMember = async (req, res) => {
   }
 };
 
+exports.getMembers = async (req, res) => {
+  const groupId = req.params.id;
+  try {
+    const members = await GroupMember.findAll({
+      where: { GroupId: groupId },
+      include: [
+        {
+          model: User,
+          attributes: ["fullname"]
+        }
+      ]
+    });  
+
+    // const members = await GroupMember.findAll();
+
+    // console.log(members);
+    res.json(members.map(m => m.User)); // return just user info
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch members" });
+  }
+};
+
+

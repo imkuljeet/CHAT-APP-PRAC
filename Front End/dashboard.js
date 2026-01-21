@@ -34,26 +34,64 @@ document.addEventListener("DOMContentLoaded", () => {
           li.textContent = group.name;
           li.style.cursor = "pointer";
   
-          // Add click handler for each group
           li.addEventListener("click", () => {
-            // Remove any existing button
-            const existingBtn = document.getElementById("addMemberBtn");
-            if (existingBtn) existingBtn.remove();
+            // Remove any existing buttons
+            const existingAddBtn = document.getElementById("addMemberBtn");
+            if (existingAddBtn) existingAddBtn.remove();
+            const existingShowBtn = document.getElementById("showMembersBtn");
+            if (existingShowBtn) existingShowBtn.remove();
+            const existingMembersDiv = document.getElementById("membersList");
+            if (existingMembersDiv) existingMembersDiv.remove();
   
-            // Create new "Add Members" button
+            // Create "Add Members" button
             const addBtn = document.createElement("button");
             addBtn.id = "addMemberBtn";
-            addBtn.textContent = `Add Members to ${group.name}`;
+            addBtn.textContent = "Add Members";
             addBtn.style.marginLeft = "10px";
-  
-            // Append button right after the clicked group
             li.appendChild(addBtn);
   
-            // Button click handler
             addBtn.addEventListener("click", () => {
-              alert(`Add members to group: ${group.name}`);
-              // Here you can redirect to an "add members" page or open a modal
               window.location.href = `add-members.html?groupId=${group.id}`;
+            });
+  
+            // Create "Show Members" button
+            const showBtn = document.createElement("button");
+            showBtn.id = "showMembersBtn";
+            showBtn.textContent = "Show Members";
+            showBtn.style.marginLeft = "10px";
+            li.appendChild(showBtn);
+  
+            showBtn.addEventListener("click", async () => {
+              try {
+                const res = await axios.get(
+                  `http://localhost:3000/group/${group.id}/members`,
+                  { headers: { Authorization: token } }
+                );
+                const members = res.data;
+  
+                // Remove old list if any
+                const oldList = document.getElementById("membersList");
+                if (oldList) oldList.remove();
+  
+                // Create new list
+                const membersDiv = document.createElement("div");
+                membersDiv.id = "membersList";
+                if (members.length === 0) {
+                  membersDiv.textContent = "No members in this group.";
+                } else {
+                  const memberUl = document.createElement("ul");
+                  members.forEach(m => {
+                    const memberLi = document.createElement("li");
+                    memberLi.textContent = m.fullname;
+                    memberUl.appendChild(memberLi);
+                  });
+                  membersDiv.appendChild(memberUl);
+                }
+                li.appendChild(membersDiv);
+              } catch (err) {
+                console.error("Error fetching members:", err);
+                alert("Failed to load members");
+              }
             });
           });
   
@@ -66,7 +104,7 @@ document.addEventListener("DOMContentLoaded", () => {
       groupsContainer.innerHTML = "<p>Failed to load groups.</p>";
     }
   }
-
+  
   // === Chat Section ===
   // Dynamically create the "Load Older Messages" button
   const loadOlderBtn = document.createElement("button");
