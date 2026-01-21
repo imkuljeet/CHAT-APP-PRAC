@@ -65,19 +65,21 @@ document.addEventListener("DOMContentLoaded", () => {
             showBtn.style.marginLeft = "10px";
             li.appendChild(showBtn);
 
-            showBtn.addEventListener("click", async () => {
+            showBtn.addEventListener("click", async (e) => {
               try {
+                // e.stopPropagation();
                 const res = await axios.get(
                   `http://localhost:3000/group/${group.id}/members`,
                   { headers: { Authorization: token } }
                 );
                 const members = res.data;
-
+            
                 const oldList = document.getElementById("membersList");
                 if (oldList) oldList.remove();
-
+            
                 const membersDiv = document.createElement("div");
                 membersDiv.id = "membersList";
+            
                 if (members.length === 0) {
                   membersDiv.textContent = "No members in this group.";
                 } else {
@@ -85,6 +87,40 @@ document.addEventListener("DOMContentLoaded", () => {
                   members.forEach(m => {
                     const memberLi = document.createElement("li");
                     memberLi.textContent = m.fullname;
+                    memberLi.style.cursor = "pointer";
+            
+                    memberLi.addEventListener("click", (e) => {
+                      e.stopPropagation();
+                    
+                      // 🔹 First remove all other member-actions in the list
+                      document.querySelectorAll(".member-actions").forEach(actions => actions.remove());
+                    
+                      // 🔹 Then check if this member already has actions (toggle behavior)
+                      const existingActions = memberLi.querySelector(".member-actions");
+                      if (existingActions) {
+                        existingActions.remove();
+                        return;
+                      }
+                    
+                      // Create action buttons container
+                      const actionsDiv = document.createElement("div");
+                      actionsDiv.className = "member-actions";
+                    
+                      // Make Admin button
+                      const makeAdminBtn = document.createElement("button");
+                      makeAdminBtn.textContent = "Make Admin";
+                      makeAdminBtn.style.marginLeft = "10px";
+                    
+                      // Delete Member button
+                      const deleteBtn = document.createElement("button");
+                      deleteBtn.textContent = "Delete Member";
+                      deleteBtn.style.marginLeft = "10px";
+                    
+                      actionsDiv.appendChild(makeAdminBtn);
+                      actionsDiv.appendChild(deleteBtn);
+                      memberLi.appendChild(actionsDiv);
+                    });                                 
+            
                     memberUl.appendChild(memberLi);
                   });
                   membersDiv.appendChild(memberUl);
@@ -94,7 +130,7 @@ document.addEventListener("DOMContentLoaded", () => {
                 console.error("Error fetching members:", err);
                 alert("Failed to load members");
               }
-            });
+            });            
 
             // Fetch messages for this group
             fetchMessages(group.id);
