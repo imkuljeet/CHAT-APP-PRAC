@@ -11,12 +11,43 @@ document.addEventListener("DOMContentLoaded", () => {
     console.error("Failed to decode token:", err);
   }
 
+  // === Groups Section ===
+  const groupsContainer = document.createElement("div");
+  groupsContainer.id = "groupsContainer";
+  groupsContainer.innerHTML = "<h3>Your Groups</h3>";
+  chatMessages.parentNode.insertBefore(groupsContainer, chatMessages);
+
+  async function fetchGroups() {
+    try {
+      const response = await axios.get("http://localhost:3000/group/list", {
+        headers: { Authorization: token }
+      });
+      const groups = response.data;
+
+      groupsContainer.innerHTML = "<h3>Your Groups</h3>";
+      if (groups.length === 0) {
+        groupsContainer.innerHTML += "<p>No groups yet. Create one!</p>";
+      } else {
+        const ul = document.createElement("ul");
+        groups.forEach(group => {
+          const li = document.createElement("li");
+          li.textContent = group.name;
+          ul.appendChild(li);
+        });
+        groupsContainer.appendChild(ul);
+      }
+    } catch (error) {
+      console.error("Error fetching groups:", error);
+      groupsContainer.innerHTML = "<p>Failed to load groups.</p>";
+    }
+  }
+
+  // === Chat Section ===
   // Dynamically create the "Load Older Messages" button
   const loadOlderBtn = document.createElement("button");
   loadOlderBtn.id = "loadOlderBtn";
   loadOlderBtn.textContent = "Load older messages";
   loadOlderBtn.style.display = "none"; // hidden by default
-  // Insert button above chat messages
   chatMessages.parentNode.insertBefore(loadOlderBtn, chatMessages);
 
   async function renderMessages(messages) {
@@ -124,9 +155,10 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // Initial load
-  fetchMessages();
+  fetchGroups();   // load groups on dashboard
+  fetchMessages(); // load chat messages
 
-  // Refresh messages every 3 seconds
+  // Refresh messages every 3 seconds (optional)
   // setInterval(fetchMessages, 3000);
 });
 
@@ -160,6 +192,7 @@ async function sendMessage(event) {
   }
 }
 
-document.getElementById('createGroupBtn').addEventListener('click',()=>{
+// Redirect to group creation page
+document.getElementById('createGroupBtn').addEventListener('click', () => {
   window.location.href = 'name-group.html';
-})
+});
