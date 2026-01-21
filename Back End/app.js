@@ -1,7 +1,8 @@
+// app.js
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-require("dotenv").config(); // load .env variables
+require("dotenv").config();
 
 const http = require("http");
 const { Server } = require("socket.io");
@@ -13,6 +14,7 @@ const User = require("./models/users");
 const Group = require("./models/groups");
 const Message = require("./models/messages");
 const GroupMember = require("./models/groupMembers");
+const ArchivedChat = require("./models/archivedChat");
 
 // Associations
 User.hasMany(Message, { foreignKey: "UserId" });
@@ -55,13 +57,11 @@ app.use("/group", groupRoutes);
 io.on("connection", (socket) => {
   console.log("User connected:", socket.id);
 
-  // Join a group room
   socket.on("joinGroup", (groupId) => {
     socket.join(`group_${groupId}`);
     console.log(`User ${socket.id} joined group ${groupId}`);
   });
 
-  // Handle sending a message
   socket.on("sendMessage", async ({ message, groupId, userId }) => {
     try {
       const newMessage = await Message.create({
@@ -69,27 +69,29 @@ io.on("connection", (socket) => {
         UserId: userId,
         GroupId: groupId,
       });
-  
-      // Fetch user fullname
+
       const user = await User.findByPk(userId, { attributes: ["fullname"] });
-  
+
       io.to(`group_${groupId}`).emit("newMessage", {
         id: newMessage.id,
         content: newMessage.content,
         UserId: userId,
         GroupId: groupId,
         createdAt: newMessage.createdAt,
-        User: { fullname: user.fullname }, // <-- attach fullname here
+        User: { fullname: user.fullname },
       });
     } catch (err) {
       console.error("Error saving message:", err);
     }
   });
-  
+
   socket.on("disconnect", () => {
     console.log("User disconnected:", socket.id);
   });
 });
+
+// === Load cron jobs ===
+require("./jobs/archiveMessages");
 
 // Sync models with DB, then start server
 sequelize
