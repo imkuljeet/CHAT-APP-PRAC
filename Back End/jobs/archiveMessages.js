@@ -7,8 +7,8 @@ const ArchivedChat = require("../models/archivedChat");
 cron.schedule("*/1 * * * *", async () => {
   try {
     // Cutoff: messages older than 1 minute
-    // const cutoff = new Date(Date.now() - 1 * 60 * 1000);
-    const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const cutoff = new Date(Date.now() - 1 * 60 * 1000);
+    // const cutoff = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     const oldMessages = await Message.findAll({
       where: { createdAt: { [Op.lt]: cutoff } },
