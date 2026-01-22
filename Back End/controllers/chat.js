@@ -47,7 +47,7 @@ const getMessages = async (req, res) => {
       where.id = { [Op.lt]: beforeId };
     }
 
-    // Try fetching from Message first
+    // Fetch up to 5 from Message
     let messages = await Message.findAll({
       where,
       include: [{ model: User, attributes: ["fullname"] }],
@@ -55,14 +55,19 @@ const getMessages = async (req, res) => {
       limit: 5,
     });
 
-    // If no messages left in Message, fallback to ArchivedChat
-    if (messages.length === 0) {
-      messages = await ArchivedChat.findAll({
+    // If fewer than 5, fetch remainder from ArchivedChat
+    if (messages.length < 5) {
+      const remaining = 5 - messages.length;
+
+      const archivedMessages = await ArchivedChat.findAll({
         where,
         include: [{ model: User, attributes: ["fullname"] }],
         order: [["id", "DESC"]],
-        limit: 5,
+        limit: remaining,
       });
+
+      // Merge results: live first, then archived
+      messages = [...messages, ...archivedMessages];
     }
 
     res.status(200).json(messages);
