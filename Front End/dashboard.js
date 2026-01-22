@@ -1,5 +1,7 @@
 let socket = null;
-let currentUserId = null; // <-- make it global
+let currentUserId = null; // global
+let lastMessageId = null; // track last message for pagination
+let reachedArchive = false; // flag when we start pulling from ArchivedChat
 
 document.addEventListener("DOMContentLoaded", () => {
   const token = localStorage.getItem("token");
@@ -12,8 +14,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // === Socket.io connection ===
-   socket = io("http://localhost:3000", {
-    auth: { token }, // optional if you want to send token during handshake
+  socket = io("http://localhost:3000", {
+    auth: { token },
   });
 
   // === Groups Section ===
@@ -40,15 +42,14 @@ document.addEventListener("DOMContentLoaded", () => {
           li.style.cursor = "pointer";
 
           li.addEventListener("click", async () => {
-            // Save selected groupId
             localStorage.setItem("selectedGroupId", group.id);
 
-            // Clear chat area
             const chatMessages = document.getElementById("chatMessages");
             chatMessages.innerHTML = "";
+            lastMessageId = null;
+            reachedArchive = false;
 
-            // Remove any existing buttons/divs
-            ["addMemberBtn", "showMembersBtn", "membersList"].forEach(id => {
+            ["addMemberBtn", "showMembersBtn", "membersList", "olderBtn"].forEach(id => {
               const el = document.getElementById(id);
               if (el) el.remove();
             });
@@ -160,7 +161,7 @@ document.addEventListener("DOMContentLoaded", () => {
             // Join group room via socket
             socket.emit("joinGroup", group.id);
 
-            // Fetch initial messages once
+            // Fetch initial messages
             fetchMessages(group.id);
           });
 
@@ -175,9 +176,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // === Messages Section ===
-  async function renderMessages(messages, groupId) {
+  function renderMessages(messages) {
     const chatMessages = document.getElementById("chatMessages");
-    chatMessages.innerHTML = "";
     messages.forEach((msg) => {
       const msgDiv = document.createElement("div");
       msgDiv.textContent =
@@ -188,14 +188,37 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  async function fetchMessages(groupId) {
+  async function fetchMessages(groupId, beforeId = null) {
     try {
-      const response = await axios.get(
-        `http://localhost:3000/chat/messages?groupId=${groupId}`,
-        { headers: { Authorization: token } }
-      );
+      const url = beforeId
+        ? `http://localhost:3000/chat/messages?groupId=${groupId}&before=${beforeId}`
+        : `http://localhost:3000/chat/messages?groupId=${groupId}`;
+
+      const response = await axios.get(url, { headers: { Authorization: token } });
       const messages = response.data;
-      await renderMessages(messages, groupId);
+
+      if (!beforeId) {
+        document.getElementById("chatMessages").innerHTML = "";
+      }
+
+      if (messages.length > 0) {
+        renderMessages(messages);
+        lastMessageId = messages[messages.length - 1].id;
+
+        let btn = document.getElementById("olderBtn");
+        if (!btn) {
+          btn = document.createElement("button");
+          btn.id = "olderBtn";
+          btn.textContent = "Get Older Messages";
+          btn.onclick = () => fetchMessages(groupId, lastMessageId);
+          document.getElementById("chatMessages").appendChild(btn);
+        } else {
+          btn.onclick = () => fetchMessages(groupId, lastMessageId);
+        }
+      } else {
+        document.getElementById("olderBtn")?.remove();
+        console.log("No more messages available.");
+      }
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
@@ -205,7 +228,6 @@ document.addEventListener("DOMContentLoaded", () => {
   socket.on("newMessage", (msg) => {
     const chatMessages = document.getElementById("chatMessages");
     const msgDiv = document.createElement("div");
-    console.log("MSG",msg);
     msgDiv.textContent =
       msg.UserId === currentUserId
         ? `You: ${msg.content}`
@@ -237,7 +259,6 @@ function sendMessage(event) {
     return;
   }
 
-  // Emit message to server
   socket.emit("sendMessage", {
     message,
     groupId,

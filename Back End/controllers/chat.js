@@ -35,46 +35,33 @@ const sendMessage = async (req, res) => {
 
 const getMessages = async (req, res) => {
   try {
-    const afterId = req.query.after ? parseInt(req.query.after, 10) : null;
-    const beforeId = req.query.before ? parseInt(req.query.before, 10) : null;
     const groupId = req.query.groupId;
+    const beforeId = req.query.before ? parseInt(req.query.before, 10) : null;
 
     if (!groupId) {
       return res.status(400).json({ error: "groupId is required" });
     }
 
     let where = { GroupId: groupId };
-
-    if (afterId) {
-      where.id = { [Op.gt]: afterId };
-    }
     if (beforeId) {
       where.id = { [Op.lt]: beforeId };
     }
 
-    // First try fetching from Message table
+    // Try fetching from Message first
     let messages = await Message.findAll({
       where,
-      include: [
-        {
-          model: User,
-          attributes: ["fullname"],
-        },
-      ],
-      order: [["createdAt", "ASC"]],
+      include: [{ model: User, attributes: ["fullname"] }],
+      order: [["id", "DESC"]],
+      limit: 5,
     });
 
-    // If empty, fallback to ArchivedChat
+    // If no messages left in Message, fallback to ArchivedChat
     if (messages.length === 0) {
       messages = await ArchivedChat.findAll({
         where,
-        include: [
-          {
-            model: User,
-            attributes: ["fullname"],
-          },
-        ],
-        order: [["createdAt", "ASC"]],
+        include: [{ model: User, attributes: ["fullname"] }],
+        order: [["id", "DESC"]],
+        limit: 5,
       });
     }
 
