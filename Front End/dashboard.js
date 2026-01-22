@@ -184,7 +184,8 @@ document.addEventListener("DOMContentLoaded", () => {
         msg.UserId === currentUserId
           ? `You: ${msg.content}`
           : `${msg.User?.fullname || "User"}: ${msg.content}`;
-      chatMessages.appendChild(msgDiv);
+      // chatMessages.appendChild(msgDiv);
+      chatMessages.insertBefore(msgDiv, chatMessages.firstChild);
     });
   }
 
@@ -193,18 +194,26 @@ document.addEventListener("DOMContentLoaded", () => {
       const url = beforeId
         ? `http://localhost:3000/chat/messages?groupId=${groupId}&before=${beforeId}`
         : `http://localhost:3000/chat/messages?groupId=${groupId}`;
-
+  
       const response = await axios.get(url, { headers: { Authorization: token } });
       const messages = response.data;
-
+  
       if (!beforeId) {
         document.getElementById("chatMessages").innerHTML = "";
       }
-
+  
       if (messages.length > 0) {
-        renderMessages(messages);
+        messages.forEach((msg) => {
+          const msgDiv = document.createElement("div");
+          msgDiv.textContent =
+            msg.UserId === currentUserId
+              ? `You: ${msg.content}`
+              : `${msg.User?.fullname || "User"}: ${msg.content}`;
+          document.getElementById("chatMessages").appendChild(msgDiv);
+        });
+  
         lastMessageId = messages[messages.length - 1].id;
-
+  
         let btn = document.getElementById("olderBtn");
         if (!btn) {
           btn = document.createElement("button");
@@ -222,7 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } catch (error) {
       console.error("Error fetching messages:", error);
     }
-  }
+  }  
 
   // Listen for new messages via socket
   socket.on("newMessage", (msg) => {
@@ -232,7 +241,8 @@ document.addEventListener("DOMContentLoaded", () => {
       msg.UserId === currentUserId
         ? `You: ${msg.content}`
         : `${msg.User?.fullname || "User"}: ${msg.content}`;
-    chatMessages.appendChild(msgDiv);
+    // chatMessages.appendChild(msgDiv);
+    chatMessages.insertBefore(msgDiv, chatMessages.firstChild);
   });
 
   // Initial load
